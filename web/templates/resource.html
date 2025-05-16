@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Resources - FusionProp{% endblock %}
+
+{% block content %}
+<div class="py-5">
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-10">
+            <h1 class="mb-4">Resources</h1>
+            <p class="lead mb-5">This page provides information about the models, data, and methods used in the FusionProp web server.</p>
+        </div>
+        <div class="col-md-2 text-center">
+            <img src="{% static 'images/knowledge_icon.png' %}" class="img-fluid" alt="Knowledge Icon" style="max-height: 80px;">
+        </div>
+    </div>
+
+    <h2 class="mb-3">Model Details</h2>
+
+    <div class="text-center mb-4">
+        <img src="{% static 'images/model_block.png' %}" class="img-fluid rounded shadow-sm" alt="FusionProp Model Architecture Block Diagram" style="max-width: 700px;">
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <p class="card-text">All prediction models within FusionProp utilize a consistent architecture based on the weighted fusion of embeddings from two powerful protein language models (PLMs): ESM2 (650M parameter version, <code>esm2_t33_650M_UR50D</code>) and ESMC (600M parameter version, <code>esmc_600m</code>). Input protein sequences are processed by both PLMs to generate sequence embeddings. These embeddings are then projected, potentially refined through shallow MLP encoders, and combined using a learned weighting parameter (alpha). The resulting fused feature vector is passed to a final MLP prediction head specific to each task. Models were trained using PyTorch, employing 5-fold cross-validation, and the final predictions represent an ensemble average of the 5 models for robustness.</p>
+        </div>
+    </div>
+
+    <div class="row row-cols-1 row-cols-md-1 g-4 mb-5">  {# Use row/cols for consistency, even if just 1 col now #}
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-header"><strong>Toxicity Model</strong></div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><strong>Task:</strong> Binary Classification (Toxic / Non-Toxic).</li>
+                        <li><strong>Training Data Source:</strong> UniProtKB/Swiss-Prot (Nov 2022 release). Positive class ('Toxin' keyword KW-0800), Negative class (reviewed proteins excluding 'Toxin' and 'Allergen'). Sequences cleaned (standard AAs only, length &lt;= 1024).</li>
+                        <li><strong>Training Protocol:</strong> 5-fold cross-validation. Training data within each fold balanced via random under-sampling of negative class to achieve a ~20:1 Negative:Positive ratio (approx. 19,700 sequences per training fold).</li>
+                        <li><strong>Validation:</strong> Performed on a held-out fold from the Nov 2022 data pool (imbalanced).</li>
+                        <li><strong>Independent Testing:</strong> Evaluated on a temporally distinct test set curated from UniProtKB/Swiss-Prot (April 2025 release) with rigorous redundancy removal (70% identity cutoff against the entire Nov 2022 pool). Test set ratio approx. 22:1 Negative:Positive.</li>
+                        <li><strong>Key Performance (on Independent Test Set):</strong> Achieved highly competitive results, including AUC ~0.978 and F1-score ~0.744. <em>(Note: This F1 was based on 1/10 subsets, final ensemble may vary slightly)</em>. Significantly outperforming many existing methods.</li>
+                        <li><strong>Loss Function:</strong> Binary Cross-Entropy with Logits Loss (<code>BCEWithLogitsLoss</code>).</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-header"><strong>Thermostability Model</strong></div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><strong>Task:</strong> Regression (Predicting Optimal Growth Temperature T<sub>opt</sub> in °C, used as a proxy for melting temperature T<sub>m</sub>).</li>
+                        <li><strong>Training Data Source:</strong> HotProtein dataset, specifically subsets like HP-S for regression training. Redundancy reduced using CD-HIT at 70% sequence identity.</li>
+                        <li><strong>Evaluation:</strong> Performance assessed on standard HotProtein subsets (HP-S, HP-S²C2, HP-S²C5).</li>
+                        <li><strong>Key Performance (Regression on HP-S Test Set):</strong> Achieved state-of-the-art or competitive correlation coefficients, e.g., Spearman ~0.899, Pearson ~0.904.</li>
+                        <li><strong>Loss Function (for Regression):</strong> Mean Squared Error Loss (<code>MSELoss</code>).</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-header"><strong>Solubility Model</strong></div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><strong>Task:</strong> Regression (Predicting the soluble fraction of E. coli proteins expressed via the PURE system).</li>
+                        <li><strong>Training Data Source:</strong> eSOL dataset, filtered and redundancy-reduced (CD-HIT 25%) as per HybridGCN/GATSol protocols. Trained on 75% of the 2737 sequences.</li>
+                        <li><strong>Validation/Testing:</strong> Evaluated on the held-out 25% of the eSOL dataset and an independent S. cerevisiae test set.</li>
+                        <li><strong>Key Performance (on eSOL Test Set):</strong> Achieved state-of-the-art results, including R² ~0.554 and RMSE ~0.214. Demonstrated strong generalization on the S. cerevisiae set (R² ~0.441).</li>
+                        <li><strong>Loss Function:</strong> Mean Squared Error Loss (<code>MSELoss</code>).</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h2 class="mb-3">Links</h2>
+    <ul class="list-unstyled">
+        <!-- <li><strong>FusionProp Publication:</strong> [Link to your final paper DOI or arXiv preprint]</li> -->
+        <li><strong>FusionProp Code Repository:</strong> <a href="https://github.com/cihebi2/fusionprop" target="_blank">GitHub Repository</a></li>
+    </ul>
+
+</div>
+{% endblock %}

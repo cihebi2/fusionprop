@@ -1,0 +1,58 @@
+services:
+  redis:
+    image: redis:alpine
+    container_name: redis_protein_webapp
+    ports:
+      - "6379:6379" # Expose Redis port if needed externally, otherwise remove
+
+  web:
+    image: cihebiyql/fusionprop:latest
+    container_name: web_protein_webapp
+    command: gunicorn protein_webapp.wsgi:application --bind 0.0.0.0:8000
+    volumes:
+      - .:/app # Mount current directory to /app in container for development
+      # Add other volume mounts if needed (e.g., for static/media files, models)
+    ports:
+      - "8000:8000"
+    environment:
+      - DJANGO_SETTINGS_MODULE=protein_webapp.settings
+      # Add other environment variables needed by Django (e.g., database connection)
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  worker:
+    image: cihebiyql/fusionprop:latest
+    container_name: worker_protein_webapp
+    command: celery -A protein_webapp worker --loglevel=info
+    volumes:
+      - .:/app # Mount current directory to /app in container for development
+      # Add other volume mounts if needed (e.g., for models)
+    environment:
+      - DJANGO_SETTINGS_MODULE=protein_webapp.settings
+      # Add other environment variables needed by Celery
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+      - web # Optional: Wait for web service to be healthy if needed
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+# Add volumes section if you need persistent storage for database, models etc.
+# volumes:
+#   postgres_data:
+#   models_data: 

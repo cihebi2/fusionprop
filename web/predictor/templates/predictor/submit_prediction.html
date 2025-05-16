@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% load static %} {# Load the static tag #}
+
+{% block title %}Submit Prediction - FusionProp{% endblock %}
+
+{% block content %}
+<div class="py-5">
+    <h1 class="mb-4">Submit New Prediction Job</h1>
+
+    <p class="lead mb-4">Enter protein sequences in FASTA format below or upload a FASTA file.</p>
+
+    {# Add small icons near the top #}
+    <div class="mb-4 text-center">
+        <img src="{% static 'images/protein.svg' %}" alt="Protein Icon" height="30" class="mx-2">
+        <img src="{% static 'images/solubility.svg' %}" alt="Solubility Icon" height="30" class="mx-2">
+        <img src="{% static 'images/thermostability.svg' %}" alt="Thermostability Icon" height="30" class="mx-2"> {# Assuming thermostability.svg exists #}
+        <img src="{% static 'images/toxicity.svg' %}" alt="Toxicity Icon" height="30" class="mx-2">
+    </div>
+
+    {# Add upload icon near form #}
+    <div class="row align-items-center">
+        <div class="col-md-10">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="job_name" class="form-label">Job Name (Optional)</label>
+                    <input type="text" class="form-control" id="job_name" name="job_name" placeholder="e.g., My Experiment 1">
+                </div>
+
+                <div class="mb-3">
+                    <label for="sequence_input" class="form-label">Sequence Input (FASTA Format)</label>
+                    <textarea class="form-control" id="sequence_input" name="sequence_input" rows="10" placeholder=">Seq1\nACDEFG...\n>Seq2\nGHIJKL..."></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label for="file_upload" class="form-label">Or Upload FASTA File</label>
+                    <input class="form-control" type="file" id="file_upload" name="file_upload" accept=".fasta,.fa,.fas,.fna">
+                    <div id="fileHelp" class="form-text">Maximum file size: 10MB. Only one input method (text or file) will be used. File upload takes precedence.</div>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Submit Job</button>
+            </form>
+        </div>
+        <div class="col-md-2 text-center d-none d-md-block">
+             <img src="{% static 'images/updata_download.png' %}" alt="Upload Data" class="img-fluid" style="max-height: 100px;">
+        </div>
+    </div>
+
+    <hr class="my-5">
+
+    {# Link to job list page #}
+    <p><a href="{% url 'predictor:job_list' %}">View submitted jobs</a></p>
+
+</div>
+{% endblock %} 

@@ -1,0 +1,72 @@
+{
+  "name": "thermostability_prediction",
+  "timestamp": "20250325_172229",
+  "training_config": {
+    "train_csv": "S_train.csv",
+    "test_csv": "S_test.csv",
+    "target_column": "tgt_reg",
+    "sequence_column": "sequence",
+    "model_save_dir": "./train_23_2",
+    "batch_size": 16,
+    "epochs": 20,
+    "lr": 0.0001,
+    "weight_decay": 1e-05,
+    "max_seq_len": 600,
+    "hidden_dim": 768,
+    "dropout": 0.0,
+    "normalize_features": true,
+    "feature_cache_size": 2000,
+    "normalization_method": "none",
+    "esm2_mean": 0.0,
+    "esm2_std": 1.0,
+    "esmc_mean": 0.0,
+    "esmc_std": 1.0,
+    "splm_mean": 0.0,
+    "splm_std": 1.0,
+    "train_mode": "fusion",
+    "fusion_type": "weighted",
+    "use_amp": true,
+    "grad_clip": 1.0,
+    "num_workers": 0,
+    "num_folds": 5,
+    "random_seed": 42,
+    "warmup_ratio": 0.1,
+    "patience": 3,
+    "device": "cuda",
+    "multi_gpu": false,
+    "use_separate_gpus": true,
+    "feature_extraction_device": "cuda:0",
+    "training_device": "cuda:0",
+    "save_features": false,
+    "temp_range": true,
+    "standardize_target": false,
+    "ensemble_strategy": "mean",
+    "feature_gpu": 0,
+    "train_gpu": 0
+  },
+  "model_configs": {
+    "esm2": {
+      "model_name": "esm2",
+      "model_path": "/HOME/scz0brz/run/model/esm2_t33_650M_UR50D",
+      "output_dim": 1280,
+      "enabled": true,
+      "type": "ESM2Config"
+    },
+    "esmc": {
+      "model_name": "esmc",
+      "model_path": "esmc_600m",
+      "output_dim": 1152,
+      "enabled": true,
+      "type": "ESMCConfig"
+    },
+    "splm": {
+      "model_name": "splm",
+      "model_path": null,
+      "output_dim": 1280,
+      "enabled": false,
+      "type": "SPLMConfig",
+      "config_path": "./configs/representation_config.yaml",
+      "checkpoint_path": "/HOME/scz0brz/run/AA_solubility/model/checkpoint_0520000.pth"
+    }
+  }
+}

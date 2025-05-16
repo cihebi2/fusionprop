@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Protein Predictor{% endblock %}</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+
+    <!-- Optional: Add Google Fonts for a slightly different feel -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Roboto+Slab:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- Custom Styles -->
+    <style>
+        :root { /* Define CSS variables for easy theme changes */
+            --primary-blue: #0d6efd; /* Default Bootstrap Blue - Adjust if needed */
+            --light-blue: #cfe2ff; /* Lighter blue accent */
+            --lighter-blue-bg: #f0f7ff; /* Very light blue for backgrounds */
+            --navbar-bg: #e7f1ff; /* Light blue for navbar */
+            --footer-bg: #e9ecef; /* Keep footer subtle or make it light blue too */
+            --text-dark: #212529;
+            --text-muted: #6c757d;
+            --bs-link-hover-color: #0a58ca; /* Default Bootstrap link hover */
+        }
+
+        body {
+            padding-top: 5rem; /* Adjust based on navbar height */
+            /* background-color: #ffffff; */ /* Option 2: Keep white background for cleaner look */
+            background-color: var(--lighter-blue-bg); /* Option 1: Very light blue background */
+            font-family: 'Lato', sans-serif;
+        }
+        h1, h2, h3, h4, h5, h6, .navbar-brand {
+             font-family: 'Roboto Slab', serif;
+        }
+        .navbar {
+            /* border-bottom: 1px solid #dee2e6; */ /* Remove or adjust border */
+            background-color: var(--navbar-bg) !important; /* Use light blue for navbar */
+            border-bottom: 1px solid #d0dff0; /* Slightly darker border */
+        }
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--text-dark); /* Ensure brand text is readable */
+        }
+        .navbar .nav-link {
+            color: var(--text-dark); /* Adjust navbar link color */
+        }
+        .navbar .nav-link:hover {
+            color: var(--primary-blue);
+        }
+        .navbar-nav .nav-link.active {
+            font-weight: bold;
+            color: var(--primary-blue) !important; /* Ensure active link stands out */
+        }
+        .main-content {
+            min-height: calc(100vh - 5rem - 56px); /* Adjust 56px based on footer height */
+            padding: 2rem; /* Add padding all around */
+            background-color: #ffffff; /* White background for content area */
+            border-radius: 0.375rem; /* Optional: slightly rounded corners */
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); /* Optional: subtle shadow */
+            margin-bottom: 2rem; /* Ensure space before footer */
+        }
+        /* Justify text in paragraphs within the main content */
+        .main-content p,
+        .main-content li,
+        .main-content .list-group-item {
+            text-align: justify;
+        }
+        .footer {
+            /* background-color: var(--footer-bg); */ /* Keep footer subtle grey */
+             background-color: var(--navbar-bg); /* Option: Match navbar color */
+            padding: 1rem 0;
+            font-size: 0.9em;
+            color: var(--text-muted);
+            border-top: 1px solid #d0dff0; /* Match navbar border */
+            /* text-align: center; */ /* Removed for multi-column layout */
+        }
+        .footer h5 {
+             font-family: 'Roboto Slab', serif;
+             color: var(--text-dark);
+        }
+        .footer a.link-secondary {
+            color: var(--text-muted) !important;
+            text-decoration: none;
+        }
+        .footer a.link-secondary:hover {
+             color: var(--primary-blue) !important;
+        }
+
+        /* Override Bootstrap Primary Button */
+        .btn-primary {
+            background-color: var(--primary-blue);
+            border-color: var(--primary-blue);
+        }
+        .btn-primary:hover {
+            background-color: #0b5ed7; /* Slightly darker blue */
+            border-color: #0a58ca;
+        }
+
+        /* Style outline button for contrast */
+        .btn-outline-secondary {
+             color: var(--primary-blue);
+             border-color: var(--primary-blue);
+        }
+        .btn-outline-secondary:hover {
+             background-color: var(--light-blue);
+             color: #0a58ca;
+             border-color: var(--primary-blue);
+        }
+
+        /* Placeholder backgrounds */
+        .bg-light.border.rounded {
+            background-color: #f8f9fa !important; /* Ensure placeholders are distinct */
+        }
+
+    </style>
+    {% block styles %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'home' %}">🧬 Protein Predictor</a> {# Placeholder URL name #}
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        {# Use request.resolver_match.url_name to check active page #}
+                        <a class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}" href="{% url 'home' %}">Home</a> {# Placeholder URL name #}
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'submit_prediction' %}active{% endif %}" href="{% url 'predictor:submit_prediction' %}">Predict</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'job_list' %}active{% endif %}" href="{% url 'predictor:job_list' %}">Jobs</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'resource' %}active{% endif %}" href="{% url 'resource' %}">Resource</a> {# Placeholder URL name #}
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'about' %}active{% endif %}" href="{% url 'about' %}">About</a> {# Placeholder URL name #}
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="container main-content">
+        {% block content %}
+        <!-- Content from child templates will go here -->
+        {% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-5 mt-5 footer">
+        <div class="container">
+            <div class="row">
+                <!-- About Section -->
+                <div class="col-md-4 mb-3">
+                    <h5>ABOUT</h5>
+                    <small class="d-block mb-2 text-muted">FusionProp: Deep language model fusion (ESM2/ESMC) enabling rapid, structure-free predictions for solubility, thermostability, and toxicity.</small>
+                    <small class="d-block mb-2 text-muted">The detail of this web server are described <a href="{% url 'resource' %}" class="link-secondary">here</a>.</small>
+                </div>
+
+                <!-- Help Center Section -->
+                <div class="col-md-4 mb-3">
+                    <h5>HELP CENTER</h5>
+                    <ul class="list-unstyled text-small">
+                        <li><a class="link-secondary" href="mailto:ciheb.el.hajji@gmail.com">&gt; Contact us</a></li>
+                        <li><a class="link-secondary" href="https://lmmd.ecust.edu.cn/">&gt; LMMD Group</a></li>
+                        <li><a class="link-secondary" href="https://pharmacy.ecust.edu.cn/">&gt; School of Pharmacy</a></li>
+                        <li><a class="link-secondary" href="https://www.ecust.edu.cn/">&gt; East China University of Science and Technology</a></li>
+                    </ul>
+                </div>
+
+                <!-- Dev Tool Section - Updated -->
+                <div class="col-md-4 mb-3">
+                    <h5>TOOLS & TECHNOLOGIES</h5>
+                    <ul class="list-unstyled text-small">
+                        <li><a class="link-secondary" href="https://www.python.org/" target="_blank" rel="noopener noreferrer">Python <!-- [Python Logo] --></a></li>
+                        <li><a class="link-secondary" href="https://www.djangoproject.com/" target="_blank" rel="noopener noreferrer">Django <!-- [Django Logo] --></a></li>
+                        <li><a class="link-secondary" href="https://docs.celeryq.dev/" target="_blank" rel="noopener noreferrer">Celery <!-- [Celery Logo] --></a></li>
+                        <li><a class="link-secondary" href="https://redis.io/" target="_blank" rel="noopener noreferrer">Redis <!-- [Redis Logo] --></a></li>
+                        <li><a class="link-secondary" href="https://pytorch.org/" target="_blank" rel="noopener noreferrer">PyTorch <!-- [PyTorch Logo] --></a></li>
+                        <li><a class="link-secondary" href="https://huggingface.co/docs/transformers/index" target="_blank" rel="noopener noreferrer">Hugging Face Transformers <!-- [HF Logo] --></a></li>
+                        <li><a class="link-secondary" href="https://gunicorn.org/" target="_blank" rel="noopener noreferrer">Gunicorn <!-- [Gunicorn Logo] --></a></li>
+                        <li><a class="link-secondary" href="https://www.docker.com/" target="_blank" rel="noopener noreferrer">Docker <!-- [Docker Logo] --></a></li>
+                        <li><a class="link-secondary" href="https://getbootstrap.com/" target="_blank" rel="noopener noreferrer">Bootstrap <!-- [Bootstrap Logo] --></a></li>
+                    </ul>
+                    <!-- <small class="text-muted"><em>(Tip: Add <code>&lt;img&gt;</code> tags or icon fonts for logos.)</em></small> -->
+                </div>
+            </div>
+
+            <div class="text-center text-muted border-top pt-3 mt-3">
+                <small>
+                    Page rendered at {% now "Y-m-d H:i:s T" %} | You are visitor No. {{ visitor_count | default:'N/A' }}
+                    <br>
+                    Copyright &copy; 2019-2020 Laboratory of Molecular Modeling and Design, School of Pharmacy, East China University of Science and Technology. All rights reserved.
+                </small>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+
+    <!-- Custom Scripts -->
+    {% block scripts %}{% endblock %}
+
+</body>
+</html>

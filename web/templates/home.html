@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}FusionProp: Rapid Protein Property Prediction{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-8">
+            <h1 class="display-4 fw-bold mb-3">Welcome to FusionProp</h1>
+            <h2 class="h4 text-muted mb-4">Rapid & Accurate Structure-Free Protein Property Prediction</h2>
+            <p class="lead">FusionProp is a cutting-edge web server designed to accelerate research in biotechnology and pharmaceutical development by providing fast and reliable predictions for key protein properties. Leveraging the power of deep learning, FusionProp predicts protein solubility, thermostability, and toxicity simultaneously, directly from amino acid sequences.</p>
+            <p>Our novel approach utilizes an optimized weighted fusion strategy, combining deep embeddings from state-of-the-art protein language models (ESM2-650M and ESMC-600M). Crucially, FusionProp operates structure-free, eliminating the computational bottleneck associated with 3D structure prediction.</p>
+
+            <!-- Moved Call to Action Section Here -->
+            <div class="mt-4 mb-4">
+                 <h3 class="mb-3 text-center">Start predicting with FusionProp today!</h3>
+                 <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                    <a href="{% url 'predictor:submit_prediction' %}" class="btn btn-primary btn-lg px-4 gap-3">Start Prediction</a>
+                    <a href="{% url 'resource' %}" class="btn btn-outline-secondary btn-lg px-4">Learn More</a>
+                </div>
+            </div>
+            <!-- End Moved Call to Action Section -->
+
+        </div>
+        <div class="col-md-4 text-center">
+            <img src="{% static 'images/homepage.png' %}" class="img-fluid rounded shadow-sm" alt="FusionProp Homepage Example">
+        </div>
+    </div>
+
+    <hr class="my-5">
+
+    <div class="row mb-4 align-items-center text-center">
+        <div class="col-md-6 mb-3">
+            <img src="{% static 'images/structure_free.png' %}" class="img-fluid rounded mb-2" alt="Structure-Free Prediction Concept">
+            <p class="text-muted fst-italic">Predict properties directly from sequence - no 3D structure needed.</p>
+        </div>
+        <div class="col-md-6 mb-3">
+            <img src="{% static 'images/fusion.png' %}" class="img-fluid rounded mb-2" alt="Model Fusion Concept">
+            <p class="text-muted fst-italic">Weighted fusion of powerful language models enhances accuracy.</p>
+        </div>
+    </div>
+
+    <hr class="my-5">
+
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-7">
+            <h3 class="mb-3">Key Features:</h3>
+            <ul>
+                <li><strong>Simultaneous Prediction:</strong> Obtain predictions for solubility, thermostability, and toxicity in a single run.</li>
+                <li><strong>Structure-Free:</strong> No need for computationally expensive structure determination or prediction.</li>
+                <li><strong>High Speed:</strong> Initial model loading may take 1-2 minutes. Afterwards, predictions are efficient (~0.4 seconds per sequence), ideal for high-throughput screening.</li>
+                <li><strong>High Accuracy:</strong> Achieves state-of-the-art or competitive performance on benchmark datasets.</li>
+                <li><strong>User-Friendly:</strong> Simple interface – just paste your sequence(s) or upload a FASTA file. Results are provided clearly and are downloadable in CSV format.</li>
+            </ul>
+             <p class="mt-4">FusionProp aims to provide the scientific community with an accessible and powerful tool to streamline protein engineering, evaluate therapeutic candidates, and advance synthetic biology projects.</p>
+        </div>
+         <div class="col-md-5 text-center">
+            <img src="{% static 'images/workflow.png' %}" class="img-fluid rounded" alt="FusionProp Workflow Diagram">
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,229 @@
+{% extends 'base.html' %} {# Step 1: Inherit from base.html #}
+
+{% block title %}Submit Prediction - Protein Predictor{% endblock %} {# Step 7: Set page title #}
+
+{% block styles %} {# Step 4: Add page-specific styles #}
+<style>
+    .form-label { font-weight: 500; }
+    .form-text { font-size: 0.875em; }
+    .card { margin-bottom: 1.5rem; }
+    .card-header { background-color: rgba(0,0,0,.03); }
+    .example-box pre {
+        white-space: pre-wrap;
+        word-break: break-all;
+        max-height: 250px;
+        overflow-y: auto;
+        background-color: #fff;
+        padding: 10px;
+        border: 1px solid #ced4da;
+        border-radius: 0.25rem;
+        font-size: 0.9em;
+    }
+    .or-divider {
+        text-align: center;
+        margin: 1rem 0;
+        font-weight: bold;
+        color: #6c757d;
+        position: relative;
+        overflow: hidden;
+    }
+    .or-divider::before,
+    .or-divider::after {
+        content: "";
+        display: inline-block;
+        width: 40%;
+        height: 1px;
+        background-color: #dee2e6;
+        vertical-align: middle;
+        margin: 0 0.5rem;
+    }
+    .or-divider::before { margin-left: -45%; }
+    .or-divider::after { margin-right: -45%; }
+    .page-title {
+         text-align: center;
+         margin-bottom: 2.5rem;
+         color: #343a40;
+    }
+    /* Styles for the container of the custom button and file name text */
+    .custom-file-upload-container {
+        display: flex; /* Align button and text nicely */
+        align-items: center;
+    }
+    /* The actual file input will be hidden using JavaScript based on its dynamic ID */
+    /* No CSS needed here to hide the original input if JS handles it properly. */
+</style>
+{% endblock %}
+
+
+{% block content %} {# Step 3: Wrap content #}
+    <h1 class="page-title">Protein Property Predictor</h1>
+
+    {% if form.non_field_errors %}
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            {% for error in form.non_field_errors %}
+                <p class="mb-0">{{ error }}</p>
+            {% endfor %}
+             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endif %}
+
+    <div class="row">
+        <!-- Form Column -->
+        <div class="col-lg-7">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0">Submit Prediction Job</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }}</label>
+                            {{ form.name }}
+                            {% if form.name.help_text %}<div class="form-text">{{ form.name.help_text }}</div>{% endif %}
+                            {% if form.name.errors %}<div class="text-danger small mt-1">{{ form.name.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.sequences_text.id_for_label }}" class="form-label">{{ form.sequences_text.label }}</label>
+                            {{ form.sequences_text }}
+                            {% if form.sequences_text.help_text %}<div class="form-text">{{ form.sequences_text.help_text }}</div>{% endif %}
+                            {% if form.sequences_text.errors %}<div class="text-danger small mt-1">{{ form.sequences_text.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="or-divider">OR</div>
+
+                        <div class="mb-4">
+                            <label for="{{ form.sequence_file.id_for_label }}" class="form-label">{{ form.sequence_file.label }}</label>
+                            {# Render the original file input. It will be targeted by JS for hiding and interaction. #}
+                            {{ form.sequence_file }} 
+                            {# Custom styled button and file name display will be PREPENDED by JS #}
+                            {# Placeholder for where the custom button and text will be injected by JS #}
+                            <div id="custom-file-display-area" class="mt-1"></div> 
+                            {% if form.sequence_file.help_text %}<div class="form-text mt-1">{{ form.sequence_file.help_text }}</div>{% endif %}
+                            {% if form.sequence_file.errors %}<div class="text-danger small mt-1">{{ form.sequence_file.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">Submit for Prediction</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Example Column -->
+        <div class="col-lg-5">
+             {% if example_sequences %}
+            <div class="card shadow-sm example-box"> {# Added example-box class for consistency #}
+                 <div class="card-header">
+                    <h5 class="mb-0">Example Input</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text small">You can copy and paste this FASTA formatted example into the text box, or use the buttons below.</p>
+                    <pre id="example-content">{{ example_sequences }}</pre>
+                    <div class="mt-3 text-center">
+                        <button class="btn btn-sm btn-outline-secondary" onclick="copyExample()">Copy Example</button>
+                        <button class="btn btn-sm btn-primary ms-2" onclick="fillFormWithExample()">Use Example</button>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div> <!-- End row -->
+{% endblock %}
+
+
+{% block scripts %} {# Step 5: Add page-specific scripts #}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const realFileInput = document.getElementById('{{ form.sequence_file.id_for_label }}');
+        const customDisplayArea = document.getElementById('custom-file-display-area');
+
+        if (realFileInput && customDisplayArea) {
+            // Create custom button and file name display elements
+            const customFileTrigger = document.createElement('button');
+            customFileTrigger.setAttribute('type', 'button');
+            customFileTrigger.classList.add('btn', 'btn-outline-secondary', 'btn-sm');
+            customFileTrigger.textContent = 'Choose File';
+
+            const customFileNameDisplay = document.createElement('span');
+            customFileNameDisplay.classList.add('ms-2'); // Bootstrap margin start
+            customFileNameDisplay.textContent = 'No file chosen';
+
+            // Prepend the custom elements to the display area
+            customDisplayArea.appendChild(customFileTrigger);
+            customDisplayArea.appendChild(customFileNameDisplay);
+
+            // Visually hide the real file input but keep it accessible
+            realFileInput.style.opacity = '0';
+            realFileInput.style.position = 'absolute';
+            realFileInput.style.zIndex = '-1';
+            realFileInput.style.width = '0.1px';
+            realFileInput.style.height = '0.1px';
+            realFileInput.style.overflow = 'hidden';
+            // Ensure it's not taking up layout space *before* our custom button
+            // by moving it after its label but before the custom display area in DOM if necessary,
+            // or by ensuring its direct parent doesn't give it unexpected space.
+            // The current HTML structure should be fine, as it's hidden and out of flow.
+
+            customFileTrigger.addEventListener('click', function() {
+                realFileInput.click();
+            });
+
+            realFileInput.addEventListener('change', function() {
+                if (realFileInput.files && realFileInput.files.length > 0) {
+                    customFileNameDisplay.textContent = realFileInput.files[0].name;
+                } else {
+                    customFileNameDisplay.textContent = 'No file chosen';
+                }
+            });
+
+            // Clear file input if text is entered in sequences_text
+            const sequencesTextArea = document.getElementById('{{ form.sequences_text.id_for_label }}');
+            if (sequencesTextArea) {
+                sequencesTextArea.addEventListener('input', function() {
+                    if (this.value.trim() !== '') {
+                        realFileInput.value = ''; // Clear the file input
+                        customFileNameDisplay.textContent = 'No file chosen'; // Reset custom display
+                    }
+                });
+            }
+        }
+    });
+
+    function copyExample() {
+        const exampleText = document.getElementById('example-content').innerText;
+        navigator.clipboard.writeText(exampleText).then(() => {
+            alert('Example copied to clipboard!'); // Consider replacing alert later
+        }, (err) => {
+            console.error('Failed to copy example: ', err);
+            alert('Failed to copy example. See console for details.');
+        });
+    }
+
+    function fillFormWithExample() {
+        const exampleText = document.getElementById('example-content').innerText;
+        const textArea = document.getElementById('id_sequences_text');
+        if (textArea) {
+            textArea.value = exampleText;
+            const realFileInput = document.getElementById('{{ form.sequence_file.id_for_label }}');
+            if (realFileInput) {
+                realFileInput.value = ''; // Clear file input when example is used
+                const customFileNameDisplay = document.getElementById('customFileName'); // This ID is now dynamic
+                // Need to find it relative to customDisplayArea or give it a static ID if recreated each time
+                const staticCustomFileNameDisplay = customDisplayArea.querySelector('span.ms-2');
+                if (staticCustomFileNameDisplay) {
+                    staticCustomFileNameDisplay.textContent = 'No file chosen';
+                }
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            textArea.focus();
+        } else {
+            console.error('Could not find the sequence text box element (expected ID: id_sequences_text).');
+            alert('Could not find the sequence text box element.');
+        }
+    }
+</script>
+{% endblock %}

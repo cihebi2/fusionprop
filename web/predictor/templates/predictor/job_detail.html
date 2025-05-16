@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Job {{ job.job_id|truncatechars:8 }} - FusionProp{% endblock %}
+
+{% block content %}
+<div class="py-5">
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-10">
+            <h1 class="mb-1">Job Details</h1>
+            <p class="text-muted">Job ID: {{ job.job_id }}</p>
+        </div>
+        <div class="col-md-2 text-center">
+            <img src="{% static 'images/magnifying_glass.png' %}" class="img-fluid" alt="View Details" style="max-height: 80px;">
+        </div>
+    </div>
+
+    {# Basic Job Info #}
+    <div class="card mb-4">
+        <div class="card-header">Job Summary</div>
+        <div class="card-body">
+            <p><strong>Name:</strong> {{ job.name|default:"N/A" }}</p>
+            <p><strong>Submitted:</strong> {{ job.created_at|date:"Y-m-d H:i:s T" }}</p>
+            <p><strong>Status:</strong>
+                <span class="badge bg-{% if job.status == 'COMPLETED' %}success{% elif job.status == 'FAILED' %}danger{% elif job.status == 'PROCESSING' %}info{% else %}secondary{% endif %}">
+                    {{ job.get_status_display }}
+                </span>
+                {# Add a spinner for processing state #}
+                {% if job.status == 'PROCESSING' or job.status == 'PENDING' %}
+                <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                {% endif %}
+            </p>
+            <p><strong>Completed:</strong> {{ job.completed_at|date:"Y-m-d H:i:s T"|default:"-" }}</p>
+            <p><strong>Sequence Count:</strong> {{ job.sequence_count|default:"N/A" }}</p>
+        </div>
+    </div>
+
+    {# Results Section #}
+    <h2 class="mb-3">Results</h2>
+    {% if job.status == 'COMPLETED' and job.results %}
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Prediction Results</span>
+                {# Add Download Button #}
+                <a href="#" class="btn btn-sm btn-outline-primary">
+                    <img src="{% static 'images/updata_download.png' %}" alt="Download" height="20" class="me-1">
+                    Download CSV (Placeholder)
+                </a>
+            </div>
+            <div class="card-body">
+                {# This assumes job.results is a JSON string list of dicts #}
+                {# Needs backend view to parse JSON before passing to template #}
+                {# OR use a template tag/filter for JSON parsing #}
+                <p><em>Display results table here...</em></p>
+                {# Example of how results *might* be displayed if parsed #}
+                <!--
+                <table class="table table-sm table-bordered">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Sequence ID</th>
+                            <th><img src="{% static 'images/solubility.svg' %}" alt="Sol" height="20" class="me-1"> Solubility</th>
+                            <th><img src="{% static 'images/thermostability.svg' %}" alt="Therm" height="20" class="me-1"> Thermostability (°C)</th>
+                            <th><img src="{% static 'images/toxicity.svg' %}" alt="Tox" height="20" class="me-1"> Toxicity (Score/Class)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for result in parsed_results %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ result.id }}</td>
+                            <td>{{ result.solubility|floatformat:3 }}</td>
+                            <td>{{ result.thermostability|floatformat:1 }}</td>
+                            <td>{{ result.toxicity|floatformat:3 }}</td> {# Adjust based on toxicity output #}
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                -->
+            </div>
+        </div>
+    {% elif job.status == 'FAILED' %}
+        <div class="alert alert-danger" role="alert">
+            <h4 class="alert-heading">Job Failed</h4>
+            <p>An error occurred while processing this job:</p>
+            <hr>
+            <p class="mb-0"><code>{{ job.error_message|default:"No error details available." }}</code></p>
+        </div>
+    {% elif job.status == 'PROCESSING' or job.status == 'PENDING' %}
+        <div class="alert alert-info" role="alert">
+            This job is currently {{ job.get_status_display }}. Please check back later for results.
+            {# Consider adding auto-refresh #}
+        </div>
+    {% else %}
+        <p>No results available for this job status.</p>
+    {% endif %}
+
+    <a href="{% url 'predictor:job_list' %}" class="btn btn-secondary mt-3">Back to Job List</a>
+
+</div>
+{% endblock %} 

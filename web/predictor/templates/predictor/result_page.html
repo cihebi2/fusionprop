@@ -1,0 +1,284 @@
+{% extends 'base.html' %} {# Step 1: Inherit from base.html #}
+
+{% block title %}Prediction Result {{ job.job_id }} - Protein Predictor{% endblock %} {# Step 2: Set page title #}
+
+{% block styles %} {# Step 3: Add page-specific styles #}
+<style>
+    body {
+        /* Add padding to the top of the body equal to the navbar height */
+        /* This prevents content from being hidden behind the fixed navbar */
+        padding-top: 56px; /* Adjust this value if your navbar height is different */
+    }
+    .result-section { margin-top: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+    .status-processing { color: orange; }
+    .status-completed { color: green; }
+    .status-failed { color: red; }
+    .status-pending { color: gray; }
+    .progress-container { margin-top: 10px; }
+    .table th, .table td { vertical-align: middle; }
+    .error-row { background-color: #f8d7da; color: #721c24; } /* Style for error rows in table */
+    .result-table-container {
+        max-height: calc(100vh - 56px - 250px); /* Adjust 56px for navbar, 250px for other elements */
+        overflow-y: auto;
+        position: relative; /* Provide context for z-index */
+    }
+    .job-details-card { margin-bottom: 1.5rem; }
+    .job-details-card .card-body p { margin-bottom: 0.5rem; }
+    .job-details-card .card-body strong { margin-right: 5px; }
+
+    /* Corrected Sticky Header Styling */
+    .result-table-container thead.sticky-top { /* Increase specificity */
+        position: sticky; /* Ensure position is sticky */
+        /* Set top to 0 because the scrolling container (.result-table-container) starts below the navbar */
+        top: 0;
+        background-color: var(--bs-table-bg, #fff); /* Use Bootstrap variable with fallback to white */
+        z-index: 10; /* Ensure header stays above table body content */
+        /* Explicitly add/reinforce the bottom border for the sticky header */
+        border-bottom: 2px solid #6c757d; /* Thicker, darker border for visibility */
+    }
+
+    /* Ensure TH cells inherit the background and don't override the thead border */
+    .result-table-container thead.sticky-top th { /* Increase specificity */
+        background-color: inherit; /* Inherit the background from thead */
+    }
+
+    .metric-explanations {
+        background-color: #f0f0f0; /* Light gray background */
+        border: 1px solid #ddd;
+        border-radius: 0.25rem;
+        padding: 1rem 1.5rem;
+        font-size: 0.9em;
+    }
+    .metric-explanations dt {
+        font-weight: bold;
+        color: #343a40;
+    }
+    .metric-explanations dd {
+        margin-bottom: 0.75rem;
+        color: #495057;
+    }
+</style>
+{% endblock %}
+
+{% block content %} {# Step 4: Wrap content #}
+    <h1 class="mb-4">Prediction Result</h1>
+
+    <div class="card shadow-sm job-details-card">
+        <div class="card-header">
+            <h5 class="mb-0">Job Details</h5>
+        </div>
+        <div class="card-body">
+            <p><strong>Job ID:</strong> {{ job.job_id }}</p>
+            <p><strong>Job Name:</strong> {{ job.name|default:"N/A" }}</p>
+            <p><strong>Sequence Count:</strong> {{ job.sequence_count }}</p>
+            <p><strong>Status:</strong>
+                <span id="job-status" class="status-{{ job.status|lower }} fw-bold">{{ job.get_status_display }}</span>
+                <span id="job-status-details" class="ms-2 text-muted"></span> <!-- For detailed status text -->
+            </p>
+            <p><strong>Submitted At:</strong> {{ job.created_at }}</p>
+            {% if job.completed_at %}
+            <p><strong>Completed At:</strong> {{ job.completed_at }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Metric Explanations Section (Reordered) -->
+    <div class="metric-explanations mb-4">
+        <h5 class="mb-3">Metric Explanations</h5>
+        <dl>
+            <dt>Thermostability Value</dt>
+            <dd>A predicted value related to the protein's thermal stability, often representing a melting temperature (Tm) or a similar metric. Higher values generally suggest the protein is stable at higher temperatures.</dd>
+
+            <dt>Solubility Value</dt>
+            <dd>A score, typically between 0 and 1, predicting the likelihood that the protein will be soluble upon expression (often assumed in a standard host like *E. coli*). Higher values indicate better predicted solubility.</dd>
+
+            <dt>Toxicity Probability</dt>
+            <dd>A score between 0 and 1 representing the predicted likelihood that the protein sequence is toxic. Higher values indicate a greater probability of toxicity.</dd>
+
+            <dt>Is Toxic</dt>
+            <dd>A simple classification (Yes/No) based on whether the Toxicity Probability exceeds a predefined threshold (e.g., 0.5).</dd>
+        </dl>
+    </div>
+    <!-- End Metric Explanations Section -->
+
+
+    <!-- Progress Bar (shown when processing) -->
+    <div id="progress-container" class="progress-container mb-3" {% if job.status != 'PROCESSING' %}style="display: none;"{% endif %}>
+        <div class="progress">
+            <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+        </div>
+    </div>
+
+    <div id="results-container" class="mt-4">
+        {% if job.status == 'COMPLETED' %}
+            {% if error_parsing %}
+                <div class="alert alert-danger">Error: Failed to parse results data stored for this job.</div>
+            {% endif %}
+
+            {% if results_list %}
+                <div class="card shadow-sm">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Prediction Results</h5>
+                        <a href="{% url 'predictor:download_results' job_id=job.job_id %}" class="btn btn-success btn-sm" id="download-button">
+                            Download Results (CSV)
+                        </a>
+                    </div>
+                    <div class="card-body p-0">
+                        <!-- This container handles the scrolling -->
+                        <div class="result-table-container table-responsive">
+                            <table class="table table-bordered table-striped table-hover mb-0">
+                                <!-- Apply sticky-top directly to thead -->
+                                <thead class="table-light sticky-top">
+                                    <!-- Table Header (Reordered) -->
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Name</th>
+                                        <th>Sequence Preview</th>
+                                        <th>Thermo. Value</th>
+                                        <th>Solubility Value</th>
+                                        <th>Toxicity Prob.</th>
+                                        <th>Is Toxic</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for result in results_list %}
+                                    <tr class="{% if result.error %}error-row{% endif %}">
+                                        <td>{{ forloop.counter }}</td>
+                                        <td>{{ result.name|default:"N/A" }}</td>
+                                        <td>{{ result.sequence_preview|default:"N/A" }}</td>
+                                        {% if result.error %}
+                                            <!-- Keep error message spanning relevant columns -->
+                                            <td colspan="5" class="text-danger">Error: {{ result.error }}</td>
+                                        {% else %}
+                                            <!-- Table Data Cells (Reordered) -->
+                                            <td>{{ result.thermostability.thermostability|floatformat:3|default:"-" }}</td>
+                                            <td>{{ result.solubility.solubility|floatformat:3|default:"-" }}</td>
+                                            <td>{{ result.toxicity.toxicity_probability|floatformat:3|default:"-" }}</td>
+                                            <td>{{ result.toxicity.is_toxic|yesno:"Yes,No,-" }}</td>
+                                            <td class="status-completed">Success</td>
+                                        {% endif %}
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div> <!-- End .result-table-container -->
+                    </div>
+                </div>
+            {% elif not error_parsing %} {# Only show this if results are empty AND no parsing error occurred #}
+                 <div class="alert alert-warning">No results found for this job, even though it's marked as completed.</div>
+            {% endif %}
+
+        {% elif job.status == 'FAILED' %}
+            <div class="alert alert-danger">
+                <strong>Prediction Failed:</strong> {{ job.error_message|default:"An unknown error occurred during processing." }}
+            </div>
+        {% elif job.status == 'PROCESSING' or job.status == 'PENDING' %}
+            <div id="processing-alert" class="alert alert-info">
+                Prediction is currently <span id="processing-status-text">{{ job.get_status_display }}</span>...
+                <div class="spinner-border spinner-border-sm ms-2" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+            <!-- JavaScript for polling will update this area -->
+        {% endif %}
+    </div>
+
+    <div class="mt-4">
+        <a href="{% url 'predictor:job_list' %}" class="btn btn-secondary">Back to Job List</a>
+        <a href="{% url 'predictor:submit_prediction' %}" class="btn btn-outline-primary ms-2">Submit Another Job</a>
+    </div>
+
+{% endblock %}
+
+
+{% block scripts %} {# Step 5: Add page-specific scripts #}
+    {% if job.status == 'PROCESSING' or job.status == 'PENDING' %}
+    <script>
+        const jobId = "{{ job.job_id }}";
+        // Ensure the URL uses the namespace
+        const statusUrl = "{% url 'predictor:check_job_status' job_id=job.job_id %}";
+        let pollingInterval = null; // To store the interval ID
+
+        function updateProgress(progressData) {
+            const progressBar = document.getElementById('progress-bar');
+            const progressContainer = document.getElementById('progress-container');
+            const statusDetails = document.getElementById('job-status-details');
+            const processingStatusText = document.getElementById('processing-status-text');
+
+
+            if (progressData && progressData.total > 0) {
+                const percent = Math.round((progressData.current / progressData.total) * 100);
+                progressBar.style.width = percent + '%';
+                progressBar.innerText = percent + '%';
+                progressBar.setAttribute('aria-valuenow', percent);
+                progressContainer.style.display = 'block'; // Show progress bar
+                if (statusDetails) statusDetails.innerText = `(${progressData.current}/${progressData.total})`;
+                if (processingStatusText && progressData.status) processingStatusText.innerText = progressData.status;
+
+            } else {
+                // Hide progress bar if no data or total is 0
+                progressContainer.style.display = 'none';
+                if (statusDetails) statusDetails.innerText = '';
+                 if (processingStatusText) processingStatusText.innerText = 'Processing...'; // Default text
+            }
+        }
+
+        function checkStatus() {
+            fetch(statusUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const statusElement = document.getElementById('job-status');
+                    const statusDetails = document.getElementById('job-status-details');
+                    const processingAlert = document.getElementById('processing-alert');
+
+                    // Update main status display
+                    if (statusElement) {
+                        statusElement.textContent = data.status_text || data.status; // Use detailed text if available
+                        statusElement.className = `status-${data.status.toLowerCase()} fw-bold`; // Update class
+                    }
+
+                     // Update progress bar and details
+                    updateProgress(data.progress);
+
+                    if (data.status === 'COMPLETED' || data.status === 'FAILED') {
+                        // Stop polling
+                        if (pollingInterval) {
+                            clearInterval(pollingInterval);
+                            pollingInterval = null;
+                        }
+                        // Reload the page to show the final results table or error
+                        console.log("Job finished. Reloading page...");
+                        window.location.reload();
+                    } else if (processingAlert) {
+                         // Ensure the "Processing..." alert is visible if still running
+                         processingAlert.style.display = 'block';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking job status:', error);
+                    const statusDetails = document.getElementById('job-status-details');
+                     if (statusDetails) statusDetails.innerText = '(Error checking status)';
+                    // Optional: Stop polling on error or implement backoff
+                    // if (pollingInterval) {
+                    //     clearInterval(pollingInterval);
+                    //     pollingInterval = null;
+                    // }
+                });
+        }
+
+        // Start polling when the page loads if the job is not finished
+        document.addEventListener('DOMContentLoaded', () => {
+             // Initial check immediately for faster feedback
+             checkStatus();
+             // Set interval for subsequent checks
+             pollingInterval = setInterval(checkStatus, 5000); // Check every 5 seconds
+        });
+    </script>
+    {% endif %}
+{% endblock %}

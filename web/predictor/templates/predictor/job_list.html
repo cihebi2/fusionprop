@@ -1,0 +1,140 @@
+{% extends 'base.html' %} {# Step 1: Inherit from base.html #}
+{% load static %}
+
+{% block title %}{{ page_title|default:"Prediction Jobs" }} - Protein Predictor{% endblock %} {# Step 2: Set page title #}
+
+{% block styles %} {# Step 3: Add page-specific styles #}
+<style>
+    .page-title {
+         text-align: center;
+         margin-bottom: 2.5rem;
+         color: #343a40;
+    }
+    .table th, .table td { vertical-align: middle; }
+    .status-processing { color: orange; font-weight: bold; }
+    .status-completed { color: green; }
+    .status-failed { color: red; }
+    .status-pending { color: gray; }
+    .table-hover tbody tr:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+    .job-id-link {
+        font-family: monospace;
+        font-size: 0.9em;
+        word-break: break-all; /* Break long IDs if needed */
+    }
+    .action-buttons .btn { margin-left: 5px; }
+    .container { max-width: 1140px; } /* Wider container for table */
+</style>
+{% endblock %}
+
+{% block content %} {# Step 4: Wrap content #}
+    <div class="py-5">
+        <div class="row mb-4 align-items-center">
+            <div class="col-md-10">
+                <h1 class="mb-4">Prediction Jobs</h1>
+                <p class="lead">View the status and results of your submitted jobs.</p>
+            </div>
+            <div class="col-md-2 text-center">
+                <img src="{% static 'images/magnifying_glass.png' %}" class="img-fluid" alt="View Jobs" style="max-height: 80px;">
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+             <a href="{% url 'predictor:submit_prediction' %}" class="btn btn-primary">Submit New Job</a>
+             <button class="btn btn-sm btn-outline-secondary" onclick="location.reload();">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-clockwise" viewBox="0 0 16 16">
+                     <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
+                     <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
+                 </svg>
+                 Refresh List
+             </button>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body p-0"> <!-- Remove padding for full-width table -->
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Job ID</th>
+                                <th>Name</th>
+                                <th>Sequences</th>
+                                <th>Status</th>
+                                <th>Submitted At</th>
+                                <th>Completed At</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for job in jobs_page %} {# Use jobs_page if paginated #}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'predictor:prediction_result' job.job_id %}" class="job-id-link" title="View Result">{{ job.job_id }}</a>
+                                </td>
+                                <td>{{ job.name|default:"N/A" }}</td>
+                                <td>{{ job.sequence_count }}</td>
+                                <td>
+                                    <span class="status-{{ job.status|lower }}">
+                                        {{ job.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>{{ job.created_at|date:"Y-m-d H:i:s" }}</td>
+                                <td>{{ job.completed_at|date:"Y-m-d H:i:s"|default:"-" }}</td>
+                                <td class="action-buttons">
+                                     <a href="{% url 'predictor:prediction_result' job.job_id %}" class="btn btn-sm btn-outline-primary" title="View Result">
+                                         View
+                                     </a>
+                                     {% if job.status == 'COMPLETED' %}
+                                     <a href="{% url 'predictor:download_results' job.job_id %}" class="btn btn-sm btn-outline-success" title="Download Results">
+                                         Download
+                                     </a>
+                                     {% endif %}
+                                     <!-- Add delete button later if needed -->
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">No prediction jobs found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pagination Controls -->
+        {% if jobs_page.has_other_pages %}
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if jobs_page.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page=1">&laquo; First</a></li>
+                    <li class="page-item"><a class="page-link" href="?page={{ jobs_page.previous_page_number }}">Previous</a></li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">&laquo; First</span></li>
+                    <li class="page-item disabled"><span class="page-link">Previous</span></li>
+                {% endif %}
+
+                <li class="page-item active" aria-current="page">
+                    <span class="page-link">Page {{ jobs_page.number }} of {{ jobs_page.paginator.num_pages }}</span>
+                </li>
+
+                {% if jobs_page.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ jobs_page.next_page_number }}">Next</a></li>
+                    <li class="page-item"><a class="page-link" href="?page={{ jobs_page.paginator.num_pages }}">Last &raquo;</a></li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">Next</span></li>
+                    <li class="page-item disabled"><span class="page-link">Last &raquo;</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        <!-- End Pagination Controls -->
+    </div>
+{% endblock %}
+
+{# Step 5: Remove block scripts if no page-specific JS needed, or keep it empty #}
+{% block scripts %}
+{# No page-specific JavaScript needed for this page currently #}
+{% endblock %}
